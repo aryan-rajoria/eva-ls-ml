@@ -4,11 +4,11 @@ Label Studio ML backend, made using EVA Database
 All the routes supported by eva-ls-backend (incoming requests)  
 | route | call|
 |:------|-----:|
-|predict    | _manager.predict()|
-|setup      | _manager.fetch()|
-|train      | _manager.train()|
-|webhook    | _manager.webhook()|
-|is_training| _manager.is_training()|
+|predict    | [_manager.predict()](https://github.com/heartexlabs/label-studio-ml-backend/blob/01829ba15221102f0f54ab4b1b07ce51d70fe3d7/label_studio_ml/model.py#L589)|
+|setup      | [_manager.fetch()](https://github.com/heartexlabs/label-studio-ml-backend/blob/01829ba15221102f0f54ab4b1b07ce51d70fe3d7/label_studio_ml/model.py#L499)|
+|train      | [_manager.train()](https://github.com/heartexlabs/label-studio-ml-backend/blob/01829ba15221102f0f54ab4b1b07ce51d70fe3d7/label_studio_ml/model.py#L708)|
+|webhook    | [_manager.webhook()](https://github.com/heartexlabs/label-studio-ml-backend/blob/01829ba15221102f0f54ab4b1b07ce51d70fe3d7/label_studio_ml/model.py#L734)|
+|is_training| [_manager.is_training()](https://github.com/heartexlabs/label-studio-ml-backend/blob/01829ba15221102f0f54ab4b1b07ce51d70fe3d7/label_studio_ml/model.py#L557)|
 |health     | returns information about server|
 |metrics    | returns nothing|
 |versions   | returns version|
