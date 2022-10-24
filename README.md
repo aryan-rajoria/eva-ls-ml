@@ -46,3 +46,5 @@ API routes called by the Label Studio server to eva-ls-backend from [Label Studi
     "decorators": ""
   },
 ```
+
+Label Studio API [documentation](https://labelstud.io/api#tag/Machine-Learning)
