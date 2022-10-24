@@ -1,7 +1,10 @@
+import logging
 import pandas as pd
 import os
 import subprocess
 import time
+import boto3
+from botocore.exceptions import ClientError
 
 from eva.server.db_api import connect
 from label_studio_ml.model import LabelStudioMLBase
@@ -11,6 +14,7 @@ from label_studio_tools.core.utils.io import get_data_dir
 import nest_asyncio
 from urllib.parse import urlparse
 
+logger = logging.getLogger(__name__)
 
 class EVADBModel(LabelStudioMLBase):
 
@@ -34,8 +38,6 @@ class EVADBModel(LabelStudioMLBase):
                 for predicted_value in label_attrs.get('predicted_values', '').split(','):
                     self.label_map[predicted_value] = label_name
 
-        # some code to initialize EVA DB server
-        pass
 
     def _get_image_url(self, task):
         image_url = task['data'].get(self.value) or task['data'].get(DATA_UNDEFINED_NAME)
