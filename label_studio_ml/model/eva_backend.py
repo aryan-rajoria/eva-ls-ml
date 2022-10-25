@@ -3,6 +3,8 @@ import pandas as pd
 import os
 import subprocess
 import time
+import io
+import json
 import boto3
 from botocore.exceptions import ClientError
 
@@ -17,15 +19,33 @@ from urllib.parse import urlparse
 logger = logging.getLogger(__name__)
 
 class EVADBModel(LabelStudioMLBase):
+    # The orginal
+    # TODO add script to make sure that eva_server starts
+    # TODO add script to download java for eva
 
-    def __init__(self, image_dir=None, score_threshold=0.3, device='cuda', **kwargs):
+    def __init__(self, image_dir=None, labels_file=None, score_threshold=0.3, device='cuda', **kwargs):
 
-        subprocess.run(['eva_server'])
-        time.sleep(10)
+        super(EVADBModel, self).__init__(**kwargs)
+        print("This is printing there", self.parsed_label_config)
+        # cannot be started from here because the readout time is 3 seconds
+        # subprocess.run(['eva_server'])
+        # time.sleep(10)
+        try:
+            nest_asyncio.apply()
+            connection = connect(host='127.0.0.1', port=5432)
+            self.cursor = connection.cursor()
+        except Exception as e:
+            print("The server is not running", e)
 
-        nest_asyncio.apply()
-        connection = connect(host='127.0.0.1', port=5432)
-        self.cursor = connection.cursor()
+        self.labels_file = labels_file
+        upload_dir = os.path.join(get_data_dir(), 'media', 'upload')
+        self.image_dir = image_dir or upload_dir
+        logger.debug(f'{self.__class__.__name__} reads images from {self.image_dir}')
+
+        if self.labels_file and os.path.exists(self.labels_file):
+            self.label_map = json_load(self.labels_file)
+        else:
+            self.label_map = {}
 
         self.from_name, info = list(self.parsed_label_config.items())[0]
         self.to_name = info['to_name'][0]
@@ -64,11 +84,13 @@ class EVADBModel(LabelStudioMLBase):
         # TODO EVA result Pandas should be converted to the correct format
         self.cursor.execute('SELECT id, data, from myvideo')
         response = self.cursor.fetch_all()
+        print(response)
         model_results = response.batch.frames
         # model_results = inference_detector(self.model, image_path)
         results = []
         all_scores = []
-        img_width, img_height = get_image_size(image_path)
+        # img_width, img_height = get_image_size(image_path)
+        img_width, img_height = 100,100
         for bboxes, label in zip(model_results, self.model.CLASSES):
             output_label = self.label_map.get(label, label)
 
@@ -102,3 +124,12 @@ class EVADBModel(LabelStudioMLBase):
             'result': results,
             'score': avg_score
         }]
+
+
+def json_load(file, int_keys=False):
+    with io.open(file, encoding='utf8') as f:
+        data = json.load(f)
+        if int_keys:
+            return {int(k): v for k, v in data.items()}
+        else:
+            return data

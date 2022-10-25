@@ -1,5 +1,9 @@
 # examples
 examples/
+label_studio_ml/model/easyocr
+label_studio_ml/model/evaback
+ocr/
+*.ipynb
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
