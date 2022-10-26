@@ -18,24 +18,30 @@ from urllib.parse import urlparse
 
 logger = logging.getLogger(__name__)
 
+
+def json_load(file, int_keys=False):
+    with io.open(file, encoding='utf8') as f:
+        data = json.load(f)
+        if int_keys:
+            return {int(k): v for k, v in data.items()}
+        else:
+            return data
+
+nest_asyncio.apply()
+connection = connect(host='127.0.0.1', port=5432)
+cursor =  connection.cursor()
+
+
 class EVADBModel(LabelStudioMLBase):
-    # The orginal
     # TODO add script to make sure that eva_server starts
     # TODO add script to download java for eva
 
     def __init__(self, image_dir=None, labels_file=None, score_threshold=0.3, device='cuda', **kwargs):
 
         super(EVADBModel, self).__init__(**kwargs)
-        print("This is printing there", self.parsed_label_config)
-        # cannot be started from here because the readout time is 3 seconds
-        # subprocess.run(['eva_server'])
-        # time.sleep(10)
-        try:
-            nest_asyncio.apply()
-            connection = connect(host='127.0.0.1', port=5432)
-            self.cursor = connection.cursor()
-        except Exception as e:
-            print("The server is not running", e)
+        print("parsed_label_config", self.parsed_label_config)
+        # print('The variables is kwargs:', kwargs)
+        
 
         self.labels_file = labels_file
         upload_dir = os.path.join(get_data_dir(), 'media', 'upload')
@@ -49,6 +55,7 @@ class EVADBModel(LabelStudioMLBase):
 
         self.from_name, info = list(self.parsed_label_config.items())[0]
         self.to_name = info['to_name'][0]
+        self.value = info['inputs'][0]['value']
 
         schema = list(self.parsed_label_config.values())[0]
 
@@ -75,61 +82,81 @@ class EVADBModel(LabelStudioMLBase):
             except ClientError as exc:
                 logger.warning(f'Can\'t generate presigned URL for {image_url}. Reason: {exc}')
         return image_url
+    
+    def eva_to_ls_format(self, return_value):
+        df = return_value.batch.frames
+        
+        return None
+    
+    def connect_to_eva(self):
+        # cannot be started from here because the readout time is 3 seconds
+        # subprocess.run(['eva_server'])
+        # time.sleep(10)
+        # nest_asyncio.apply()
+        self.cursor = cursor
 
-    def predict(self, tasks, *kwargs):
+    def eva_query_result(self, video_path):
+        self.cursor.execute('drop table myvideo')
+        output_value = self.cursor.fetch_all()
+        print(output_value)
+        self.cursor.execute(f'load file "{video_path}" into myvideo')
+        output_value = self.cursor.fetch_all()
+        print(output_value)
+        # self.cursor.execute("""SELECT id, FastRCNNObjectDetector(data) 
+        #           FROM myvideo 
+        #           WHERE id < 20""")
+        # output_value = self.cursor.fetch_all()
+        # print(output_value)
+        return self.eva_to_ls_format(output_value)
+
+    def predict(self, tasks, **kwargs):
         # assert len(tasks) == 1 (used in LS ML code)
+        print(tasks)
         task = tasks[0]
-        image_url = self._get_image_url(task)
-        image_path = self.get_local_path(image_url)
+        video_url = self._get_image_url(task)
+        video_path = self.get_local_path(video_url)
+        print("\n\nPath for image is", video_path, "\n\n")
         # TODO EVA result Pandas should be converted to the correct format
-        self.cursor.execute('SELECT id, data, from myvideo')
-        response = self.cursor.fetch_all()
-        print(response)
-        model_results = response.batch.frames
-        # model_results = inference_detector(self.model, image_path)
-        results = []
-        all_scores = []
-        # img_width, img_height = get_image_size(image_path)
-        img_width, img_height = 100,100
-        for bboxes, label in zip(model_results, self.model.CLASSES):
-            output_label = self.label_map.get(label, label)
+        self.connect_to_eva()
+        model_results = self.eva_query_result(video_path)
+        print(model_results)
 
-            if output_label not in self.labels_in_config:
-                print(output_label + ' label not found in project config.')
-                continue
-            for bbox in bboxes:
-                bbox = list(bbox)
-                if not bbox:
-                    continue
-                score = float(bbox[-1])
-                if score < self.score_thresh:
-                    continue
-                x, y, xmax, ymax = bbox[:4]
-                results.append({
-                    'from_name': self.from_name,
-                    'to_name': self.to_name,
-                    'type': 'rectanglelabels',
-                    'value': {
-                        'rectanglelabels': [output_label],
-                        'x': x / img_width * 100,
-                        'y': y / img_height * 100,
-                        'width': (xmax - x) / img_width * 100,
-                        'height': (ymax - y) / img_height * 100
+        predictions = []
+        output = {
+            "to_name": self.to_name,
+            "from_name": self.from_name,
+            "type": "videorectangle",
+            "value": {
+                "labels": ["Other"],
+                "sequence": [
+                    {
+                    "x": 46.71875,
+                    "y": 6.944444444444445,
+                    "frame": 1,
+                    "width": 4.0625,
+                    "height": 23.61111111111111,
+                    "enabled": 'true',
+                    "rotation": 0,
+                    'time': 0.04
                     },
-                    'score': score
-                })
-                all_scores.append(score)
-        avg_score = sum(all_scores) / max(len(all_scores), 1)
-        return [{
-            'result': results,
-            'score': avg_score
-        }]
+                    {
+                    "x": 46.640625,
+                    "y": 6.666666666666667,
+                    "frame": 6,
+                    "width": 4.140625,
+                    "height": 23.88888888888889,
+                    "enabled": 'false',
+                    "rotation": 0,
+                    "time": 0.24,
+                    }
+                ],
+                
+            },
+            "score": 1
+        }
+        predictions = [{ "result":[output], "score": 1}] 
+        
+        return predictions
 
+        
 
-def json_load(file, int_keys=False):
-    with io.open(file, encoding='utf8') as f:
-        data = json.load(f)
-        if int_keys:
-            return {int(k): v for k, v in data.items()}
-        else:
-            return data
