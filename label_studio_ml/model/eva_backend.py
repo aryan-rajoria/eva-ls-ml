@@ -102,11 +102,11 @@ class EVADBModel(LabelStudioMLBase):
         self.cursor.execute(f'load file "{video_path}" into myvideo')
         output_value = self.cursor.fetch_all()
         print(output_value)
-        # self.cursor.execute("""SELECT id, FastRCNNObjectDetector(data) 
-        #           FROM myvideo 
-        #           WHERE id < 20""")
-        # output_value = self.cursor.fetch_all()
-        # print(output_value)
+        self.cursor.execute("""SELECT id, FastRCNNObjectDetector(data) 
+                  FROM myvideo 
+                  WHERE id < 20""")
+        output_value = self.cursor.fetch_all()
+        print(output_value)
         return self.eva_to_ls_format(output_value)
 
     def predict(self, tasks, **kwargs):
@@ -123,38 +123,11 @@ class EVADBModel(LabelStudioMLBase):
 
         predictions = []
         output = {
-            "to_name": self.to_name,
-            "from_name": self.from_name,
-            "type": "videorectangle",
-            "value": {
-                "labels": ["Other"],
-                "sequence": [
-                    {
-                    "x": 46.71875,
-                    "y": 6.944444444444445,
-                    "frame": 1,
-                    "width": 4.0625,
-                    "height": 23.61111111111111,
-                    "enabled": 'true',
-                    "rotation": 0,
-                    'time': 0.04
-                    },
-                    {
-                    "x": 46.640625,
-                    "y": 6.666666666666667,
-                    "frame": 6,
-                    "width": 4.140625,
-                    "height": 23.88888888888889,
-                    "enabled": 'false',
-                    "rotation": 0,
-                    "time": 0.24,
-                    }
-                ],
-                
-            },
-            "score": 1
+            'predictions': [
+
+            ]
         }
-        predictions = [{ "result":[output], "score": 1}] 
+        predictions = output
         
         return predictions
 
