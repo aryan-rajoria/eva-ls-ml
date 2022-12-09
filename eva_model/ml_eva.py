@@ -39,7 +39,8 @@ class EVADBModel(LabelStudioMLBase):
     def __init__(self, image_dir=None, labels_file=None, score_threshold=0.3, device='cuda', **kwargs):
 
         super(EVADBModel, self).__init__(**kwargs)
-        print("parsed_label_config", self.parsed_label_config)
+        print("\n\n\n\n Setup was run \n\n\n")
+        print('parsed config:', self.parsed_label_config)
         # print('The variables is kwargs:', kwargs)
         
 
@@ -66,7 +67,7 @@ class EVADBModel(LabelStudioMLBase):
                     self.label_map[predicted_value] = label_name
 
 
-    def _get_image_url(self, task):
+    def _get_video_url(self, task):
         image_url = task['data'].get(self.value) or task['data'].get(DATA_UNDEFINED_NAME)
         if image_url.startswith('s3://'):
             # presign s3 url
@@ -111,10 +112,13 @@ class EVADBModel(LabelStudioMLBase):
 
     def predict(self, tasks, **kwargs):
         # assert len(tasks) == 1 (used in LS ML code)
-        print(tasks)
+        print(tasks[0]['data']['video'])
         task = tasks[0]
-        video_url = self._get_image_url(task)
-        video_path = self.get_local_path(video_url)
+        video_url = self._get_video_url(task)
+        # video_path = self.get_local_path(video_url)
+        
+        video_path = "/" + tasks[0]['data']['video'].split('?d=')[-1]
+
         print("\n\nPath for image is", video_path, "\n\n")
         # TODO EVA result Pandas should be converted to the correct format
         self.connect_to_eva()
@@ -122,14 +126,49 @@ class EVADBModel(LabelStudioMLBase):
         print(model_results)
 
         predictions = []
-        output = {
-            'predictions': [
-
+        output = [
+                {
+                    "result": [
+                        {
+                            "value": {
+                                "framesCount": 206,
+                                "duration": 8.24,
+                                "sequence": [
+                                    {
+                                        "frame": 1,
+                                        "enabled": True,
+                                        "rotation": 0,
+                                        "x": 35.5625,
+                                        "y": 4.5,
+                                        "width": 29.156249999999993,
+                                        "height": 59.833333333333336,
+                                        "time": 0.04
+                                    },
+                                    {
+                                        "x": 36.12499999999999,
+                                        "y": 3.9999999999999996,
+                                        "width": 29.156249999999993,
+                                        "height": 59.833333333333336,
+                                        "rotation": 0,
+                                        "frame": 19,
+                                        "enabled": False,
+                                        "time": 0.76
+                                    }
+                                ],
+                                "labels": [
+                                    "Man"
+                                ]
+                            },
+                            "id": "485123h123j4hh",
+                            "from_name": "box",
+                            "to_name": "video",
+                            "type": "videorectangle",
+                            "origin": "manual"
+                        }
+                    ],
+                            
+                }
             ]
-        }
         predictions = output
         
         return predictions
-
-        
-
