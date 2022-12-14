@@ -2,7 +2,7 @@ attr==0.3.1
 attrs>=19.2.0
 appdirs>=1.4.3
 colorama>=0.4.4
-Flask==1.1.2
+Flask==2.1.0
 lxml>=4.2.5
 Pillow
 requests>=2.22.0,<3
@@ -18,4 +18,4 @@ opencv-contrib-python-headless
 rq==1.10.1
 redis
 boto3
-label-studio-ml==1.0.7
+# label-studio-ml==1.0.7

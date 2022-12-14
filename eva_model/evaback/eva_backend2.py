@@ -122,10 +122,10 @@ class EVAModel(LabelStudioMLBase):
         for index, row in result_df.iterrows():
             
             #objects in a scene
-            num = len(row['fastrcnnobjectdetector.labels'])
+            num = len(row['yolov5.labels'])
             for i in range(num):
-                bbox = row['fastrcnnobjectdetector.bboxes'][i]
-                label = row['fastrcnnobjectdetector.labels'][i]
+                bbox = row['yolov5.bboxes'][i]
+                label = row['yolov5.labels'][i]
                 val = self.get_value_dict(bbox, count, label)
                 id_gen = random.randrange(10**10)
                 result.append({
@@ -136,6 +136,8 @@ class EVAModel(LabelStudioMLBase):
                     'type': 'videorectangle',
                     'origin': 'manual'
                 })
+                id_gen = random.randrange(10**10)
+                
             count+=1
         return result
 
@@ -150,27 +152,52 @@ class EVAModel(LabelStudioMLBase):
         "The function uses SELECT statement to fetch results from eva DB"
         # TODO Get a way to get TASK_ID from
         # For now assuming v1
+        import asyncio
+        from eva.server.db_api import connect
+        loop = asyncio.new_event_loop()
+        asyncio.set_event_loop(loop)
 
+        EVA_CURSOR = connect(host='127.0.0.1', port=5432).cursor()
+
+        print(video_path, f'{"v" + str(video_path)}')
         EVA_CURSOR.execute(f"""SELECT id, YoloV5(data) 
-                  FROM {"v" + str(video_path)} WHERE id<10;
+                  FROM {"v" + str(video_path)} WHERE id>50 AND id<61;
         """)
         result_dataframe = EVA_CURSOR.fetch_all().batch.frames
-        print(result_dataframe)
+        # print(result_dataframe)
 
         return result_dataframe
 
     def predict(self, tasks, **kwargs):
 
+        print(len(tasks))
         task = tasks[0]
+        print(task)
         video_url = self._get_video_url(task)
         # video_path = self.get_local_path(video_url)
         video_path = "/" + tasks[0]['data']['video'].split('?d=')[-1]
-        self.for_now_ingest_eva(video_path)
+        print(video_path)
+        # self.for_now_ingest_eva(video_path)
         self._get_video_size(video_path)
+        print(self.height, self.width)
 
-        model_results = self.eva_result(video_path)
+        model_results = self.eva_result(task['id'])
+        print(model_results)
 
         output = self.eva_to_ls(model_results)
+        id_gen = random.randrange(10**10)
+        output.append({
+                    "value": {
+                        "text": [
+                            f"{random.randrange(1,5)}"
+                        ]
+                    },
+                    "id": str(id_gen),
+                        "from_name": "cluster",
+                        "to_name": "video",
+                        "type": "textarea",
+                        "origin": "manual"
+                })
         predictions = [
             {
                 "result": output

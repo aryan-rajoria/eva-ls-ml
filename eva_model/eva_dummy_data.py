@@ -151,8 +151,8 @@ class EVAModel(LabelStudioMLBase):
         # TODO Get a way to get TASK_ID from
         # For now assuming v1
 
-        EVA_CURSOR.execute(f"""SELECT id, YoloV5(data) 
-                  FROM {"v" + str(video_path)} WHERE id<10;
+        EVA_CURSOR.execute("""SELECT id, FastRCNNObjectDetector(data) 
+                  FROM v3 WHERE id<10;
         """)
         result_dataframe = EVA_CURSOR.fetch_all().batch.frames
         print(result_dataframe)
