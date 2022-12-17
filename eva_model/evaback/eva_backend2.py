@@ -96,8 +96,8 @@ class EVAModel(LabelStudioMLBase):
         y1 = (y1/self.height)*100
         
         value = {
-            'framesCount': 4459,
-            'duration': 178.352472,
+            'framesCount': 100,
+            'duration': 50,
             'sequence': [
                 {
                     'frame': index,
@@ -107,18 +107,18 @@ class EVAModel(LabelStudioMLBase):
                     'y': y1,
                     'width': width,
                     'height': height,
-                    'time': 0.04*index,
+                    'time': (1/30)*index,
                 }
             ],
             "labels": [
-                label
+                f"{label}"
             ]
         }
         return value
 
     def eva_to_ls(self, result_df):
         result = []
-        count=1
+        count=2
         for index, row in result_df.iterrows():
             
             #objects in a scene
@@ -136,17 +136,15 @@ class EVAModel(LabelStudioMLBase):
                     'type': 'videorectangle',
                     'origin': 'manual'
                 })
-                id_gen = random.randrange(10**10)
-                
             count+=1
         return result
 
-    def for_now_ingest_eva(self, video_path):
-        EVA_CURSOR.execute('drop table OneVideo')
-        result = EVA_CURSOR.fetch_all()
-        EVA_CURSOR.execute(f'LOAD FILE "{video_path}" INTO OneVideo')
-        result = EVA_CURSOR.fetch_all()
-        print(result)
+    # def for_now_ingest_eva(self, video_path):
+    #     EVA_CURSOR.execute('drop table OneVideo')
+    #     result = EVA_CURSOR.fetch_all()
+    #     EVA_CURSOR.execute(f'LOAD FILE "{video_path}" INTO OneVideo')
+    #     result = EVA_CURSOR.fetch_all()
+    #     print(result)
 
     def eva_result(self, video_path):
         "The function uses SELECT statement to fetch results from eva DB"
@@ -161,7 +159,7 @@ class EVAModel(LabelStudioMLBase):
 
         print(video_path, f'{"v" + str(video_path)}')
         EVA_CURSOR.execute(f"""SELECT id, YoloV5(data) 
-                  FROM {"v" + str(video_path)} WHERE id>50 AND id<61;
+                  FROM {"v" + str(video_path)} WHERE id<10;
         """)
         result_dataframe = EVA_CURSOR.fetch_all().batch.frames
         # print(result_dataframe)
@@ -171,37 +169,39 @@ class EVAModel(LabelStudioMLBase):
     def predict(self, tasks, **kwargs):
 
         print(len(tasks))
-        task = tasks[0]
-        print(task)
-        video_url = self._get_video_url(task)
-        # video_path = self.get_local_path(video_url)
-        video_path = "/" + tasks[0]['data']['video'].split('?d=')[-1]
-        print(video_path)
-        # self.for_now_ingest_eva(video_path)
-        self._get_video_size(video_path)
-        print(self.height, self.width)
+        if len(tasks) > 1:
+            return []
+        predictions = []
+        for task in tasks:
+            video_url = self._get_video_url(task)
+            # video_path = self.get_local_path(video_url)
+            video_path = "/" + tasks[0]['data']['video'].split('?d=')[-1]
+            print(video_path)
+            # self.for_now_ingest_eva(video_path)
+            self._get_video_size(video_path)
+            print(self.height, self.width)
 
-        model_results = self.eva_result(task['id'])
-        print(model_results)
+            model_results = self.eva_result(task['id'])
+            print(model_results)
 
-        output = self.eva_to_ls(model_results)
-        id_gen = random.randrange(10**10)
-        output.append({
-                    "value": {
-                        "text": [
-                            f"{random.randrange(1,5)}"
-                        ]
-                    },
-                    "id": str(id_gen),
-                        "from_name": "cluster",
-                        "to_name": "video",
-                        "type": "textarea",
-                        "origin": "manual"
-                })
-        predictions = [
-            {
-                "result": output
-            }
-        ]
-        # print(predictions)
+            output = self.eva_to_ls(model_results)
+            id_gen = random.randrange(10**10)
+            output.append({
+                        "value": {
+                            "text": [
+                                f"ClusterID{random.randrange(100,105)}"
+                            ]
+                        },
+                        "id": str(id_gen),
+                            "from_name": "cluster",
+                            "to_name": "video",
+                            "type": "textarea",
+                            "origin": "manual"
+                    })
+            predictions.append(
+                {
+                    "result": output
+                }
+            )
+            # print(predictions)
         return predictions
