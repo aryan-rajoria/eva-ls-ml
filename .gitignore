@@ -2,6 +2,10 @@
 examples/
 label_studio_ml/model/easyocr
 label_studio_ml/model/evaback
+eva_model/eva_dummy_data.py
+eva_model/ml_eva.py
+eva_model/evaback
+eva_model/evaImage
 ocr/
 *.ipynb
 
