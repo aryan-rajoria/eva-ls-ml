@@ -60,9 +60,6 @@ class EVAModel(LabelStudioMLBase):
                 for predicted_value in label_attrs.get('predicted_values', '').split(','):
                     self.label_map[predicted_value] = label_name
 
-        print(schema)
-        print(self.label_map)
-
     def _get_video_size(self, video_path):
         vcap = cv2.VideoCapture(video_path)
         self.width = int(vcap.get(3))
