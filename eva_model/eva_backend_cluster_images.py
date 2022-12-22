@@ -179,7 +179,19 @@ class EVAModel(LabelStudioMLBase):
             print(model_results)
 
             output = self.eva_to_ls(model_results)
-            
+            id_gen = random.randrange(10**10)
+            output.append({
+                        "value": {
+                            "text": [
+                                f"ClusterID{random.randrange(100,105)}"
+                            ]
+                        },
+                        "id": str(id_gen),
+                        "from_name": "cluster",
+                        "to_name": "image",
+                        "type": "textarea",
+                        "origin": "manual"
+                    })
             predictions.append(
                 {
                     "result": output

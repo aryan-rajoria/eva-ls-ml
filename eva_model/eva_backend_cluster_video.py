@@ -60,9 +60,6 @@ class EVAModel(LabelStudioMLBase):
                 for predicted_value in label_attrs.get('predicted_values', '').split(','):
                     self.label_map[predicted_value] = label_name
 
-        print(schema)
-        print(self.label_map)
-
     def _get_video_size(self, video_path):
         vcap = cv2.VideoCapture(video_path)
         self.width = int(vcap.get(3))
@@ -85,7 +82,7 @@ class EVAModel(LabelStudioMLBase):
                 logger.warning(f'Can\'t generate presigned URL for {image_url}. Reason: {exc}')
         return image_url
     
-    def get_value_dict(self, bbox, label):
+    def get_value_dict(self, bbox, index, label):
         # time is 0.04 per frame
         x1, y1 = bbox[0], bbox[1]
         x2, y2 = bbox[2], bbox[3]
@@ -96,12 +93,21 @@ class EVAModel(LabelStudioMLBase):
         y1 = (y1/self.height)*100
         
         value = {
-            'x': x1,
-            'y': y1,
-            'width': width,
-            'height': height,
-            'rotation': 0,
-            "rectanglelabels": [
+            'framesCount': 100,
+            'duration': 50,
+            'sequence': [
+                {
+                    'frame': index,
+                    'enabled': False,
+                    'rotation': 0,
+                    'x': x1,
+                    'y': y1,
+                    'width': width,
+                    'height': height,
+                    'time': (1/30)*index,
+                }
+            ],
+            "labels": [
                 f"{label}"
             ]
         }
@@ -109,7 +115,7 @@ class EVAModel(LabelStudioMLBase):
 
     def eva_to_ls(self, result_df):
         result = []
-        count=0
+        count=2
         for index, row in result_df.iterrows():
             
             #objects in a scene
@@ -117,17 +123,14 @@ class EVAModel(LabelStudioMLBase):
             for i in range(num):
                 bbox = row['yolov5.bboxes'][i]
                 label = row['yolov5.labels'][i]
-                val = self.get_value_dict(bbox, label)
+                val = self.get_value_dict(bbox, count, label)
                 id_gen = random.randrange(10**10)
                 result.append({
-                    "original_width": self.width,
-                    "original_height": self.height,
-                    "image_rotation": 0,
                     'value': val,
                     'id': str(id_gen),
-                    'from_name': "label",
-                    'to_name': "image",
-                    'type': 'rectanglelabels',
+                    'from_name': "box",
+                    'to_name': "video",
+                    'type': 'videorectangle',
                     'origin': 'manual'
                 })
             count+=1
@@ -152,8 +155,8 @@ class EVAModel(LabelStudioMLBase):
         EVA_CURSOR = connect(host='127.0.0.1', port=5432).cursor()
 
         print(video_path, f'{"v" + str(video_path)}')
-        EVA_CURSOR.execute(f"""SELECT YoloV5(data) 
-                  FROM {"v" + str(video_path)};
+        EVA_CURSOR.execute(f"""SELECT id, YoloV5(data) 
+                  FROM {"v" + str(video_path)} WHERE id<10;
         """)
         result_dataframe = EVA_CURSOR.fetch_all().batch.frames
         # print(result_dataframe)
@@ -169,7 +172,7 @@ class EVAModel(LabelStudioMLBase):
         for task in tasks:
             video_url = self._get_video_url(task)
             # video_path = self.get_local_path(video_url)
-            video_path = "/" + tasks[0]['data']['image'].split('?d=')[-1]
+            video_path = "/" + tasks[0]['data']['video'].split('?d=')[-1]
             print(video_path)
             # self.for_now_ingest_eva(video_path)
             self._get_video_size(video_path)
@@ -179,7 +182,19 @@ class EVAModel(LabelStudioMLBase):
             print(model_results)
 
             output = self.eva_to_ls(model_results)
-            
+            id_gen = random.randrange(10**10)
+            output.append({
+                        "value": {
+                            "text": [
+                                f"ClusterID{random.randrange(100,105)}"
+                            ]
+                        },
+                        "id": str(id_gen),
+                            "from_name": "cluster",
+                            "to_name": "video",
+                            "type": "textarea",
+                            "origin": "manual"
+                    })
             predictions.append(
                 {
                     "result": output
