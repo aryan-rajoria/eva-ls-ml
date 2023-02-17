@@ -7,6 +7,7 @@ eva_model/ml_eva.py
 eva_model/evaback
 eva_model/evaImage
 ocr/
+evaMlBack/
 *.ipynb
 
 # Byte-compiled / optimized / DLL files

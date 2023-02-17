@@ -1,10 +1,11 @@
 {
     "configurations": [
+    
         {
             "name": "Python: Current File",
             "type": "python",
             "request": "launch",
-            "program": "/workspace/label/eva-ls-ml/eva_model/evaback/_wsgi.py",
+            "program": "/home/greatsage/projects/intern/gt/label/eva-ls-ml/evaMlBack/_wsgi.py",
             "console": "integratedTerminal",
             "justMyCode": true
             // "args": ["start", "./eva_model/evaback"]
