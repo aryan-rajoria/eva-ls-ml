@@ -58,15 +58,15 @@ class EVAModel(LabelStudioMLBase):
                 for predicted_value in label_attrs.get('predicted_values', '').split(','):
                     self.label_map[predicted_value] = label_name
 
-        print(schema)
-        print(self.label_map)
+
 
 
     def predict(self, tasks, **kwargs):
 
         predictions = []
         for task in tasks:
-            task_id = task['data']
+            task_id = task['id']
+            print(task_id)
             id_gen = random.randrange(10**10)
             output = []
             output.append({
@@ -79,7 +79,7 @@ class EVAModel(LabelStudioMLBase):
                         "from_name": "cluster",
                         "to_name": "image",
                         "type": "textarea",
-                        "origin": "manual"
+                        "origin": "manual",
                     })
             predictions.append(
                 {
@@ -88,3 +88,8 @@ class EVAModel(LabelStudioMLBase):
             )
             # print(predictions)
         return predictions
+    
+
+    def fit(self, tasks, workdir=None, **kwargs):
+        print(tasks)
+        return {}
